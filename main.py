@@ -1,101 +1,80 @@
-# Importe as bibliotecas necessárias, 
+   # Importe as bibliotecas necessárias, 
 import pandas as pd
 import re
 
-def generateDfResidentPopulationAndIlliteracy(path):
-    df = pd.read_csv(path, sep=';')
+def generateDfIlliteracyAboveFifteen(path):
+    # Read the CSV file with the correct delimiter
+    df = pd.read_csv(path, sep=',')
+
+    # Extract ID and clean 'Município' column
     df['id'] = df['Município'].str.extract('(\d+)')
     df['Município'] = df['Município'].apply(lambda x: re.sub('\d+', '', x).strip())
+    column_order = ['id', 'Município', 'População não alfabetizada', 'Ano']
+    df = df[column_order]
+
     return df
 
-def generateDfAvaregeIncomePerCapita(path):
-    df = pd.read_csv(path, sep=';', decimal=',')
+
+def generateDfPopulationAboveFifteen(path):
+    # Read the CSV file with the correct delimiter
+    df = pd.read_csv(path, sep=',')
+
+    # Extract ID and clean 'Município' column
     df['id'] = df['Município'].str.extract('(\d+)')
     df['Município'] = df['Município'].apply(lambda x: re.sub('\d+', '', x).strip())
+    column_order = ['id', 'Município', 'População de 15 anos ou mais', 'Ano']
+    df = df[column_order]
+
     return df
 
-def generateDfAvaregeIncomePerCapitaColor(path):
-    df = pd.read_csv(path, sep=';', decimal=',')
-    df['id'] = df['Município'].str.extract('(\d+)')
-    df['Município'] = df['Município'].apply(lambda x: re.sub('\d+', '', x).strip())
-
-    df['Branca'] = df['Branca'].astype(str).str.replace(',', '.')
-    df['Preta'] = df['Preta'].astype(str).str.replace(',', '.')
-    df['Amarela'] = df['Amarela'].astype(str).str.replace(',', '.')
-    df['Parda'] = df['Parda'].astype(str).str.replace(',', '.')
-    df['Sem declaração'] = df['Sem declaração'].astype(str).str.replace(',', '.')
-    df['Indígena'] = df['Indígena'].astype(str).str.replace(',', '.')
-
-    # "..." significa dado não disponivel
-    df['Branca'] = df['Branca'].replace('...', -1)
-    df['Preta'] = df['Preta'].replace('...', -1)
-    df['Amarela'] = df['Amarela'].replace('...', -1)
-    df['Parda'] = df['Parda'].replace('...', -1)
-    df['Sem declaração'] = df['Sem declaração'].replace('...', -1)
-    df['Indígena'] = df['Indígena'].replace('...', -1)
-
-    # "-" significa que não possui nenhuma pessoa da raça/cor especifica 
-    df['Branca'] = df['Branca'].replace('-', 0)
-    df['Preta'] = df['Preta'].replace('-', 0)
-    df['Amarela'] = df['Amarela'].replace('-', 0)
-    df['Parda'] = df['Parda'].replace('-', 0)
-    df['Sem declaração'] = df['Sem declaração'].replace('-', 0)
-    df['Indígena'] = df['Indígena'].replace('-', 0)
-
+def generateDfAverageIncomePerCapita(path):
+    # Read the CSV file
+    df = pd.read_csv(path, sep=',', decimal=',')
     
+    # Extract ID and clean 'Município' column
+    df['id'] = df['Município'].str.extract('(\d+)')
+    df['Município'] = df['Município'].apply(lambda x: re.sub('\d+', '', x).strip())
+
+    # Reorder columns to have 'id' before 'Município'
+    column_order = ['id', 'Município', 'Renda média domic. per capita', 'Ano']
+    df = df[column_order]
+    return df
+
+def generateDfAverageIncomePerCapitaColor(path):
+    # Read the CSV file
+    df = pd.read_csv(path, sep=',', decimal=',')
+    
+    # Extract ID and clean 'Município' column
+    df['id'] = df['Município'].str.extract('(\d+)')
+    df['Município'] = df['Município'].apply(lambda x: re.sub('\d+', '', x).strip())
+
+    # Replace commas with dots and handle special symbols
+    for column in ['Branca', 'Preta', 'Amarela', 'Parda', 'Sem declaração', 'Indígena', 'Total', 'Ano']:
+        df[column] = df[column].astype(str).str.replace(',', '.')
+        df[column] = df[column].replace('...', -1)
+        df[column] = df[column].replace('-', 0)
+        df[column] = df[column].astype(float)
+
+    # Drop the 'Total' column
     df = df.drop('Total', axis=1)
+
+    # Reorder columns to have 'id' before 'Município'
+    column_order = ['id', 'Município'] + [col for col in df.columns if col not in ['id', 'Município']]
+    df = df[column_order]
+
     return df
 
 
+df_resident_population = generateDfPopulationAboveFifteen("./resident-population-above-15.csv")
+df_resident_population.to_csv('resident-population-treated.csv', index=False, header=True)
 
 
-df_resident_population_1991 = generateDfResidentPopulationAndIlliteracy("./resident-population-above-15-years/resident-population-1991.csv")
-df_resident_population_1991.to_csv('resident-population-1991-treated.csv', index=False, header=False)
+df_illiteracy_population = generateDfIlliteracyAboveFifteen("./illiteracy-above-15.csv")
+df_illiteracy_population.to_csv('illiteracy-population-treated.csv', index=False, header=True)
 
-df_resident_population_2000 = generateDfResidentPopulationAndIlliteracy("./resident-population-above-15-years/resident-population-2000.csv")
-df_resident_population_2000.to_csv('resident-population-2000-treated.csv', index=False, header=False)
-
-df_resident_population_2010 = generateDfResidentPopulationAndIlliteracy("./resident-population-above-15-years/resident-population-2010.csv")
-df_resident_population_2010.to_csv('resident-population-2010-treated.csv', index=False, header=False)
+df_average_income_per_capita = generateDfAverageIncomePerCapita("./average-income-per-capita.csv")
+df_average_income_per_capita.to_csv('average-income-per-capita-treated.csv', index=False, header=True)
 
 
-df_illiteracy_population_1991 = generateDfResidentPopulationAndIlliteracy("./illiteracy-above-15-years/illiteracy-population-1991.csv")
-print(df_illiteracy_population_1991)
-df_illiteracy_population_1991.to_csv('illiteracy-population-1991.csv', index=False, header=False)
-
-df_illiteracy_population_2000 = generateDfResidentPopulationAndIlliteracy("./illiteracy-above-15-years/illiteracy-population-2000.csv")
-print(df_illiteracy_population_2000)
-df_illiteracy_population_2000.to_csv('illiteracy-population-2000.csv', index=False, header=False)
-
-df_illiteracy_population_2010 = generateDfResidentPopulationAndIlliteracy("./illiteracy-above-15-years/illiteracy-population-2010.csv")
-print(df_illiteracy_population_2010)
-df_illiteracy_population_2010.to_csv('illiteracy-population-2010.csv', index=False, header=False)
-
-
-df_average_income_per_capita_1991 = generateDfAvaregeIncomePerCapita("./average-income-per-capita/average-income-per-capita-1991.csv")
-print(df_average_income_per_capita_1991)
-df_average_income_per_capita_1991.to_csv('average-income-per-capita-1991.csv', index=False, header=False)
-
-df_average_income_per_capita_2000 = generateDfAvaregeIncomePerCapita("./average-income-per-capita/average-income-per-capita-2000.csv")
-print(df_average_income_per_capita_2000)
-df_average_income_per_capita_2000.to_csv('average-income-per-capita-2000.csv', index=False, header=False)
-
-df_average_income_per_capita_2010 = generateDfAvaregeIncomePerCapita("./average-income-per-capita/average-income-per-capita-2010.csv")
-print(df_average_income_per_capita_2010)
-df_average_income_per_capita_2010.to_csv('average-income-per-capita-2010.csv', index=False, header=False)
-
-df_average_income_per_capita_1991_color = generateDfAvaregeIncomePerCapitaColor("./average-income-per-capita/avarege-income-per-capita-by-color/average-income-per-capita-1991.csv")
-print(df_average_income_per_capita_1991_color)
-df_average_income_per_capita_1991_color.to_csv('average-income-per-capita-1991-color.csv', index=False, header=False)
-
-df_average_income_per_capita_2000_color = generateDfAvaregeIncomePerCapitaColor("./average-income-per-capita/avarege-income-per-capita-by-color/average-income-per-capita-2000.csv")
-print(df_average_income_per_capita_2000_color)
-df_average_income_per_capita_2000_color.to_csv('average-income-per-capita-2000-color.csv', index=False, header=False)
-
-df_average_income_per_capita_1991_color = generateDfAvaregeIncomePerCapitaColor("./average-income-per-capita/avarege-income-per-capita-by-color/average-income-per-capita-1991.csv")
-print(df_average_income_per_capita_1991_color)
-df_average_income_per_capita_1991_color.to_csv('average-income-per-capita-1991-color.csv', index=False, header=False)
-
-df_average_income_per_capita_2010_color = generateDfAvaregeIncomePerCapitaColor("./average-income-per-capita/avarege-income-per-capita-by-color/average-income-per-capita-2010.csv")
-print(df_average_income_per_capita_2010_color)
-df_average_income_per_capita_2010_color.to_csv('average-income-per-capita-2010-color.csv', index=False, header=False)
+df_average_income_per_capita_color = generateDfAverageIncomePerCapitaColor("./color-average-income-per-capita.csv")
+df_average_income_per_capita_color.to_csv('color-average-income-per-capita-treated.csv', index=False, header=True)
